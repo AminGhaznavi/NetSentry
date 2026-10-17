@@ -1,0 +1,1151 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NetSentry - Cybersecurity Recon & Port Scanner Engine</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-primary: #070a12;
+            --bg-secondary: #0d1322;
+            --bg-card: rgba(13, 19, 34, 0.75);
+            --bg-card-hover: rgba(20, 29, 51, 0.85);
+            --bg-input: rgba(10, 15, 28, 0.9);
+            --border-color: rgba(38, 51, 77, 0.6);
+            --border-glow: rgba(0, 242, 254, 0.3);
+            --text-primary: #f8fafc;
+            --text-secondary: #94a3b8;
+            --accent-cyan: #00f2fe;
+            --accent-blue: #4facfe;
+            --accent-emerald: #10b981;
+            --accent-emerald-glow: rgba(16, 185, 129, 0.25);
+            --accent-rose: #f43f5e;
+            --accent-rose-glow: rgba(244, 63, 94, 0.25);
+            --accent-amber: #f59e0b;
+            --accent-amber-glow: rgba(245, 158, 11, 0.25);
+            --glass-shadow: 0 20px 40px -15px rgba(0, 0, 0, 0.7), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg-primary);
+            color: var(--text-primary);
+            min-height: 100vh;
+            padding: 2.5rem 1rem;
+            position: relative;
+            overflow-x: hidden;
+            background-image: 
+                radial-gradient(circle at 10% 15%, rgba(0, 242, 254, 0.06) 0%, transparent 40%),
+                radial-gradient(circle at 90% 85%, rgba(79, 172, 254, 0.06) 0%, transparent 40%),
+                radial-gradient(circle at 50% 50%, rgba(16, 185, 129, 0.03) 0%, transparent 60%);
+        }
+
+        body::before {
+            content: "";
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background-image: linear-gradient(rgba(255, 255, 255, 0.015) 1px, transparent 1px),
+                              linear-gradient(90deg, rgba(255, 255, 255, 0.015) 1px, transparent 1px);
+            background-size: 32px 32px;
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        .container {
+            max-width: 1020px;
+            margin: 0 auto;
+            position: relative;
+            z-index: 1;
+        }
+        header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 2rem;
+            padding-bottom: 1.5rem;
+            border-bottom: 1px solid var(--border-color);
+            flex-wrap: wrap;
+            gap: 1rem;
+        }
+
+        .logo-wrap {
+            display: flex;
+            align-items: center;
+            gap: 1.15rem;
+        }
+
+        .shield-icon {
+            width: 50px;
+            height: 50px;
+            background: linear-gradient(135deg, var(--accent-cyan), var(--accent-blue));
+            border-radius: 14px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 0 25px rgba(0, 242, 254, 0.4), inset 0 1px 2px rgba(255, 255, 255, 0.4);
+            position: relative;
+        }
+
+        .shield-icon svg {
+            width: 26px;
+            height: 26px;
+            fill: #070a12;
+        }
+
+        h1 {
+            font-size: 1.85rem;
+            font-weight: 700;
+            letter-spacing: -0.5px;
+            background: linear-gradient(to right, #ffffff, #cbd5e1);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .subtitle {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            font-weight: 400;
+            margin-top: 2px;
+        }
+
+        .badge-live {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            background: rgba(16, 185, 129, 0.12);
+            color: var(--accent-emerald);
+            padding: 7px 14px;
+            border-radius: 9999px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            border: 1px solid rgba(16, 185, 129, 0.3);
+            box-shadow: 0 0 15px rgba(16, 185, 129, 0.15);
+        }
+
+        .pulse-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background-color: var(--accent-emerald);
+            box-shadow: 0 0 10px var(--accent-emerald);
+            animation: radarPulse 2s infinite ease-in-out;
+        }
+
+        @keyframes radarPulse {
+            0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.6); }
+            70% { transform: scale(1); box-shadow: 0 0 0 8px rgba(16, 185, 129, 0); }
+            100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
+        }
+
+        .card {
+            background: var(--bg-card);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid var(--border-color);
+            border-radius: 18px;
+            padding: 2rem;
+            margin-bottom: 2rem;
+            box-shadow: var(--glass-shadow);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .card::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0;
+            height: 1px;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.15), transparent);
+        }
+        .form-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+            gap: 1.25rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .col-span-full { grid-column: 1 / -1; }
+
+        label {
+            display: block;
+            font-size: 0.78rem;
+            font-weight: 600;
+            color: var(--text-secondary);
+            margin-bottom: 0.5rem;
+            text-transform: uppercase;
+            letter-spacing: 0.8px;
+        }
+
+        input {
+            width: 100%;
+            background-color: var(--bg-input);
+            border: 1px solid var(--border-color);
+            color: var(--text-primary);
+            padding: 0.85rem 1.1rem;
+            border-radius: 10px;
+            font-size: 0.95rem;
+            font-family: 'JetBrains Mono', monospace;
+            transition: all 0.25s ease;
+            box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.3);
+        }
+
+        input:focus {
+            outline: none;
+            border-color: var(--accent-cyan);
+            box-shadow: 0 0 15px rgba(0, 242, 254, 0.25), inset 0 1px 2px rgba(0, 0, 0, 0.4);
+            background-color: rgba(13, 19, 34, 0.95);
+        }
+
+        .presets {
+            display: flex;
+            gap: 0.6rem;
+            flex-wrap: wrap;
+            margin-top: 0.6rem;
+        }
+
+        .preset-btn {
+            background: rgba(30, 41, 59, 0.5);
+            border: 1px solid var(--border-color);
+            color: var(--text-secondary);
+            padding: 5px 12px;
+            border-radius: 8px;
+            font-size: 0.78rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .preset-btn:hover {
+            color: var(--accent-cyan);
+            border-color: var(--accent-cyan);
+            background: rgba(0, 242, 254, 0.08);
+            transform: translateY(-1px);
+        }
+
+        .btn-scan {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.85rem;
+            width: 100%;
+            background: linear-gradient(135deg, var(--accent-cyan), var(--accent-blue));
+            color: #070a12;
+            font-weight: 700;
+            font-size: 1rem;
+            padding: 1rem 1.5rem;
+            border-radius: 12px;
+            border: none;
+            cursor: pointer;
+            transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: 0 4px 20px rgba(0, 242, 254, 0.35);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .btn-scan::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(rgba(255,255,255,0.2), transparent);
+            opacity: 0;
+            transition: opacity 0.2s;
+        }
+
+        .btn-scan:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 0 30px rgba(0, 242, 254, 0.6);
+        }
+
+        .btn-scan:hover:not(:disabled)::after { opacity: 1; }
+        .btn-scan:active:not(:disabled) { transform: translateY(0); }
+        .btn-scan:disabled { opacity: 0.65; cursor: not-allowed; }
+
+        .alert-error {
+            display: none;
+            background: rgba(244, 63, 94, 0.12);
+            border: 1px solid rgba(244, 63, 94, 0.35);
+            color: #fca5a5;
+            padding: 1rem 1.25rem;
+            border-radius: 12px;
+            margin-bottom: 1.5rem;
+            font-size: 0.9rem;
+            box-shadow: 0 4px 15px rgba(244, 63, 94, 0.15);
+        }
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1.25rem;
+            margin-bottom: 1.75rem;
+        }
+
+        .stat-card {
+            background: var(--bg-card);
+            backdrop-filter: blur(12px);
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+            padding: 1.35rem 1.5rem;
+            box-shadow: var(--glass-shadow);
+            position: relative;
+            overflow: hidden;
+            transition: border-color 0.2s ease;
+        }
+
+        .stat-card:hover {
+            border-color: rgba(0, 242, 254, 0.25);
+        }
+
+        .stat-card::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; width: 4px; height: 100%;
+            background: linear-gradient(to bottom, var(--accent-cyan), var(--accent-blue));
+            opacity: 0.7;
+        }
+
+        .stat-label {
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.8px;
+            margin-bottom: 0.45rem;
+            font-weight: 600;
+        }
+
+        .stat-value {
+            font-size: 1.4rem;
+            font-weight: 700;
+            font-family: 'JetBrains Mono', monospace;
+            color: var(--accent-cyan);
+            letter-spacing: -0.5px;
+        }
+
+        .table-wrap {
+            overflow-x: auto;
+            border-radius: 12px;
+            border: 1px solid var(--border-color);
+            background: rgba(7, 10, 18, 0.4);
+            -webkit-overflow-scrolling: touch;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            text-align: left;
+            font-size: 0.9rem;
+        }
+
+        th {
+            background-color: rgba(26, 34, 52, 0.7);
+            color: var(--text-secondary);
+            padding: 1rem 1.25rem;
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 0.8px;
+            border-bottom: 1px solid var(--border-color);
+            font-weight: 600;
+        }
+
+        td {
+            padding: 1rem 1.25rem;
+            border-bottom: 1px solid var(--border-color);
+            font-family: 'JetBrains Mono', monospace;
+            color: var(--text-primary);
+        }
+
+        tr:last-child td { border-bottom: none; }
+        tr:hover td { background-color: rgba(20, 29, 51, 0.6); }
+
+        .status-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 7px;
+            padding: 5px 12px;
+            border-radius: 9999px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            font-family: 'Inter', sans-serif;
+            background: rgba(16, 185, 129, 0.15);
+            color: var(--accent-emerald);
+            border: 1px solid rgba(16, 185, 129, 0.35);
+            box-shadow: 0 0 10px rgba(16, 185, 129, 0.15);
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 3rem 1rem;
+            color: var(--text-secondary);
+            font-family: 'Inter', sans-serif;
+        }
+
+        .spinner {
+            display: none;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(7, 10, 18, 0.3);
+            border-radius: 50%;
+            border-top-color: #070a12;
+            animation: spin 0.75s linear infinite;
+        }
+
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        .badge-grade {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 52px;
+            height: 52px;
+            border-radius: 14px;
+            font-size: 1.6rem;
+            font-weight: 800;
+            font-family: 'JetBrains Mono', monospace;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.4);
+        }
+
+        .grade-A { background: rgba(16, 185, 129, 0.22); color: var(--accent-emerald); border: 1px solid var(--accent-emerald); box-shadow: 0 0 20px var(--accent-emerald-glow); }
+        .grade-B { background: rgba(0, 242, 254, 0.22); color: var(--accent-cyan); border: 1px solid var(--accent-cyan); box-shadow: 0 0 20px rgba(0,242,254,0.25); }
+        .grade-C { background: rgba(245, 158, 11, 0.22); color: var(--accent-amber); border: 1px solid var(--accent-amber); box-shadow: 0 0 20px var(--accent-amber-glow); }
+        .grade-F { background: rgba(244, 63, 94, 0.22); color: var(--accent-rose); border: 1px solid var(--accent-rose); box-shadow: 0 0 20px var(--accent-rose-glow); }
+
+        /* Modern Segmented Navigation Bar */
+        .tabs-nav {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            background: var(--bg-card);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid var(--border-color);
+            border-radius: 14px;
+            padding: 6px;
+            margin-bottom: 2rem;
+            box-shadow: var(--glass-shadow);
+            overflow-x: auto;
+            scrollbar-width: none;
+            -ms-overflow-style: none;
+            -webkit-overflow-scrolling: touch;
+            scroll-snap-type: x mandatory;
+        }
+
+        .tabs-nav::-webkit-scrollbar {
+            display: none;
+        }
+
+        .tab-btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.55rem;
+            flex-shrink: 0;
+            background: transparent;
+            border: 1px solid transparent;
+            color: var(--text-secondary);
+            font-family: 'Inter', sans-serif;
+            font-size: 0.9rem;
+            font-weight: 500;
+            padding: 0.7rem 1.25rem;
+            border-radius: 10px;
+            cursor: pointer;
+            white-space: nowrap;
+            user-select: none;
+            transition: all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
+            scroll-snap-align: start;
+        }
+
+        .tab-btn:hover:not(.active) {
+            color: var(--text-primary);
+            background: rgba(255, 255, 255, 0.05);
+            border-color: rgba(255, 255, 255, 0.08);
+            transform: translateY(-1px);
+        }
+
+        .tab-btn:focus-visible {
+            outline: 2px solid var(--accent-cyan);
+            outline-offset: 2px;
+        }
+
+        .tab-btn.active {
+            background: linear-gradient(135deg, rgba(0, 242, 254, 0.16), rgba(79, 172, 254, 0.16));
+            color: #ffffff;
+            border: 1px solid rgba(0, 242, 254, 0.5);
+            box-shadow: 0 0 16px rgba(0, 242, 254, 0.28), inset 0 1px 0 rgba(255, 255, 255, 0.2);
+            font-weight: 600;
+            text-shadow: 0 0 12px rgba(0, 242, 254, 0.4);
+        }
+
+        /* Tab Content & Visibility Management */
+        .tab-pane {
+            display: none;
+        }
+
+        .tab-pane.active {
+            display: block;
+            animation: tabFadeIn 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        @keyframes tabFadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(6px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @media (max-width: 768px) {
+            body {
+                padding: 1rem 0.6rem;
+            }
+
+            .container {
+                width: 100%;
+                max-width: 100%;
+            }
+
+            header {
+                flex-direction: column;
+                align-items: flex-start;
+                margin-bottom: 1.25rem;
+                padding-bottom: 1rem;
+                gap: 0.85rem;
+            }
+
+            .logo-wrap {
+                gap: 0.85rem;
+            }
+
+            .shield-icon {
+                width: 42px;
+                height: 42px;
+                border-radius: 12px;
+            }
+
+            .shield-icon svg {
+                width: 22px;
+                height: 22px;
+            }
+
+            h1 {
+                font-size: 1.45rem;
+                line-height: 1.2;
+            }
+
+            .subtitle {
+                font-size: 0.78rem;
+                line-height: 1.35;
+            }
+
+            .card {
+                padding: 1.25rem 1rem;
+                margin-bottom: 1.25rem;
+                border-radius: 14px;
+            }
+
+            /* Stack all form grid items into a single clean column */
+            .form-grid {
+                grid-template-columns: 1fr;
+                gap: 1rem;
+                margin-bottom: 1.25rem;
+            }
+
+            .col-span-full {
+                grid-column: 1;
+            }
+
+            /* Responsive touch targets and prevent iOS zoom (16px font-size) */
+            input {
+                font-size: 16px;
+                padding: 0.85rem 1rem;
+                min-height: 48px;
+            }
+
+            .btn-scan {
+                font-size: 0.95rem;
+                padding: 0.9rem 1.25rem;
+                min-height: 48px;
+            }
+
+            /* Tab Navigation Bar as smooth horizontally scrollable strip */
+            .tabs-nav {
+                gap: 0.4rem;
+                padding: 5px;
+                margin-bottom: 1.25rem;
+                border-radius: 12px;
+                -webkit-overflow-scrolling: touch;
+            }
+
+            .tab-btn {
+                padding: 0.65rem 1rem;
+                font-size: 0.84rem;
+                min-height: 42px;
+                border-radius: 8px;
+            }
+
+            /* Responsive Stats Grid */
+            .stats-grid {
+                grid-template-columns: repeat(2, 1fr);
+                gap: 0.85rem;
+                margin-bottom: 1.25rem;
+            }
+
+            .stat-card {
+                padding: 1rem;
+                border-radius: 12px;
+            }
+
+            .stat-value {
+                font-size: 1.25rem;
+            }
+
+            /* Responsive tables */
+            th, td {
+                padding: 0.75rem 0.85rem;
+                font-size: 0.82rem;
+            }
+
+            /* Quick Presets wrap comfortably with good touch targets */
+            .presets {
+                gap: 0.5rem;
+            }
+
+            .preset-btn {
+                padding: 7px 12px;
+                font-size: 0.8rem;
+                min-height: 36px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            body {
+                padding: 0.75rem 0.4rem;
+            }
+
+            .card {
+                padding: 1rem 0.85rem;
+            }
+
+            h1 {
+                font-size: 1.3rem;
+            }
+
+            .tabs-nav {
+                padding: 4px;
+                gap: 0.3rem;
+            }
+
+            .tab-btn {
+                padding: 0.6rem 0.85rem;
+                font-size: 0.8rem;
+            }
+
+            .stats-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+
+<body>
+    <div class="container">
+        <!-- Header -->
+        <header>
+            <div class="logo-wrap">
+                <div class="shield-icon">
+                    <svg viewBox="0 0 24 24">
+                        <path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm0 2.18l7 3.12v4.7c0 4.67-3.13 9.01-7 10.15-3.87-1.14-7-5.48-7-10.15V6.3l7-3.12z"/>
+                    </svg>
+                </div>
+                <div>
+                    <h1>NetSentry</h1>
+                    <div class="subtitle">Multi-Threaded TCP Port Scanner & Security Reconnaissance Engine</div>
+                </div>
+            </div>
+            <div class="badge-live">
+                <span class="pulse-dot"></span>
+                Engine Ready
+            </div>
+        </header>
+
+        <!-- Navigation Tabs -->
+        <nav class="tabs-nav" role="tablist" aria-label="Engine Tools">
+            <button type="button" class="tab-btn active" role="tab" aria-selected="true" aria-controls="tab-port-scanner" onclick="switchTab('port-scanner', this)">
+                🛡️ Port Scanner
+            </button>
+            <button type="button" class="tab-btn" role="tab" aria-selected="false" aria-controls="tab-security-headers" onclick="switchTab('security-headers', this)">
+                🔒 Security Headers
+            </button>
+            <button type="button" class="tab-btn" role="tab" aria-selected="false" aria-controls="tab-dns-lookup" onclick="switchTab('dns-lookup', this)">
+                🌐 DNS Records
+            </button>
+            <button type="button" class="tab-btn" role="tab" aria-selected="false" aria-controls="tab-ip-geolocation" onclick="switchTab('ip-geolocation', this)">
+                📍 IP Geolocation
+            </button>
+        </nav>
+
+        <!-- TAB 1: PORT SCANNER -->
+        <div id="tab-port-scanner" class="tab-pane active" role="tabpanel">
+
+
+        <!-- Scanner Configuration Form -->
+        <div class="card">
+            <form id="scanForm">
+                <div class="form-grid">
+                    <div class="col-span-full">
+                        <label for="target">Target Host (IP or Domain)</label>
+                        <input type="text" id="target" name="target" placeholder="e.g., scanme.nmap.org or 127.0.0.1" value="scanme.nmap.org" required>
+                    </div>
+
+                    <div>
+                        <label for="start_port">Start Port</label>
+                        <input type="number" id="start_port" name="start_port" min="1" max="65535" value="20" required>
+                    </div>
+
+                    <div>
+                        <label for="end_port">End Port</label>
+                        <input type="number" id="end_port" name="end_port" min="1" max="65535" value="100" required>
+                    </div>
+
+                    <div>
+                        <label for="threads">Worker Threads (1-500)</label>
+                        <input type="number" id="threads" name="threads" min="1" max="500" value="100" required>
+                    </div>
+
+                    <div class="col-span-full">
+                        <label>Quick Presets:</label>
+                        <div class="presets">
+                            <button type="button" class="preset-btn" onclick="setPorts(20, 100)">Common (20-100)</button>
+                            <button type="button" class="preset-btn" onclick="setPorts(80, 443)">Web (80-443)</button>
+                            <button type="button" class="preset-btn" onclick="setPorts(20, 1024)">System (20-1024)</button>
+                            <button type="button" class="preset-btn" onclick="setPorts(3000, 9000)">Dev/Services (3000-9000)</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="errorAlert" class="alert-error"></div>
+
+                <button type="submit" id="submitBtn" class="btn-scan">
+                    <span class="spinner" id="btnSpinner"></span>
+                    <span id="btnText">Initiate Port Scan</span>
+                </button>
+            </form>
+        </div>
+
+        <!-- Scan Telemetry / Stats Cards -->
+        <div id="statsSection" style="display: none;">
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-label">Resolved Target IP</div>
+                    <div class="stat-value" id="statIp">-</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">Ports Scanned</div>
+                    <div class="stat-value" id="statTotal">-</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">Open Ports Found</div>
+                    <div class="stat-value" id="statOpen" style="color: var(--accent-emerald);">-</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">Scan Duration</div>
+                    <div class="stat-value" id="statDuration">-</div>
+                </div>
+            </div>
+
+            <!-- Results Table -->
+            <div class="card">
+                <h3 style="margin-bottom: 1rem; font-size: 1.1rem; color: var(--text-primary);">Discovered Open Services</h3>
+                <div class="table-wrap">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Port</th>
+                                <th>Protocol</th>
+                                <th>Common Service</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody id="resultsBody"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+        </div> <!-- END TAB 1 -->
+
+        <!-- TAB 2: SECURITY HEADERS AUDIT -->
+        <div id="tab-security-headers" class="tab-pane" role="tabpanel">
+            <div class="card">
+                <form id="headersForm">
+                    <div class="form-grid">
+                        <div class="col-span-full">
+                            <label for="headersTarget">Target Domain or URL</label>
+                            <input type="text" id="headersTarget" placeholder="e.g. github.com or https://example.com" value="github.com" required>
+                        </div>
+                    </div>
+                    <div id="headersAlert" class="alert-error"></div>
+                    <button type="submit" id="headersBtn" class="btn-scan">
+                        <span class="spinner" id="headersSpinner"></span>
+                        <span id="headersBtnText">Audit Security Headers</span>
+                    </button>
+                </form>
+            </div>
+
+            <div id="headersResultSection" style="display: none;">
+                <div class="stats-grid">
+                    <div class="stat-card" style="display: flex; align-items: center; gap: 1rem;">
+                        <div id="headerGradeBadge" class="badge-grade grade-A">A</div>
+                        <div>
+                            <div class="stat-label">Security Grade</div>
+                            <div class="stat-value" id="headerScorePct">100%</div>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-label">Headers Implemented</div>
+                        <div class="stat-value" id="headerPassRatio">6 / 6</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-label">Web Server Info</div>
+                        <div class="stat-value" id="headerServerInfo" style="font-size:1rem; color:var(--text-primary);">GitHub.com</div>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <h3 style="margin-bottom: 1rem; font-size: 1.1rem; color: var(--text-primary);">Header Security Analysis</h3>
+                    <div class="table-wrap">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Security Header</th>
+                                    <th>Status</th>
+                                    <th>Value / Recommendation</th>
+                                </tr>
+                            </thead>
+                            <tbody id="headersTableBody"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- TAB 3: DNS RECORDS -->
+        <div id="tab-dns-lookup" class="tab-pane" role="tabpanel">
+            <div class="card">
+                <form id="dnsForm">
+                    <div class="form-grid">
+                        <div class="col-span-full">
+                            <label for="dnsDomain">Target Domain Name</label>
+                            <input type="text" id="dnsDomain" placeholder="e.g. cloudflare.com or google.com" value="cloudflare.com" required>
+                        </div>
+                    </div>
+                    <div id="dnsAlert" class="alert-error"></div>
+                    <button type="submit" id="dnsBtn" class="btn-scan">
+                        <span class="spinner" id="dnsSpinner"></span>
+                        <span id="dnsBtnText">Query DNS Records</span>
+                    </button>
+                </form>
+            </div>
+
+            <div id="dnsResultSection" style="display: none;">
+                <div class="form-grid" id="dnsRecordsGrid"></div>
+            </div>
+        </div>
+
+        <!-- TAB 4: IP GEOLOCATION -->
+        <div id="tab-ip-geolocation" class="tab-pane" role="tabpanel">
+            <div class="card">
+                <form id="geoForm">
+                    <div class="form-grid">
+                        <div class="col-span-full">
+                            <label for="geoTarget">Target Host or IP Address</label>
+                            <input type="text" id="geoTarget" placeholder="e.g. 8.8.8.8 or nmap.org" value="8.8.8.8" required>
+                        </div>
+                    </div>
+                    <div id="geoAlert" class="alert-error"></div>
+                    <button type="submit" id="geoBtn" class="btn-scan">
+                        <span class="spinner" id="geoSpinner"></span>
+                        <span id="geoBtnText">Locate IP / ASN</span>
+                    </button>
+                </form>
+            </div>
+
+            <div id="geoResultSection" style="display: none;">
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-label">Country & Region</div>
+                        <div class="stat-value" id="geoCountry" style="font-size:1.1rem; color:var(--text-primary);">-</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-label">City / Zip</div>
+                        <div class="stat-value" id="geoCity" style="font-size:1.1rem; color:var(--text-primary);">-</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-label">ISP & Organization</div>
+                        <div class="stat-value" id="geoIsp" style="font-size:1.1rem; color:var(--accent-cyan);">-</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-label">Autonomous System (ASN)</div>
+                        <div class="stat-value" id="geoAsn" style="font-size:1rem; color:var(--text-primary);">-</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        // Tab Switching Logic
+        function switchTab(tabId, btnElement) {
+            document.querySelectorAll('.tab-pane').forEach(pane => pane.classList.remove('active'));
+            document.querySelectorAll('.tab-btn').forEach(btn => {
+                btn.classList.remove('active');
+                btn.setAttribute('aria-selected', 'false');
+            });
+
+            const targetPane = document.getElementById(`tab-${tabId}`);
+            if (targetPane) {
+                targetPane.classList.add('active');
+            }
+            if (btnElement) {
+                btnElement.classList.add('active');
+                btnElement.setAttribute('aria-selected', 'true');
+            }
+        }
+
+        function setPorts(start, end) {
+            document.getElementById('start_port').value = start;
+            document.getElementById('end_port').value = end;
+        }
+
+        const scanForm = document.getElementById('scanForm');
+        const submitBtn = document.getElementById('submitBtn');
+        const btnText = document.getElementById('btnText');
+        const btnSpinner = document.getElementById('btnSpinner');
+        const errorAlert = document.getElementById('errorAlert');
+        const statsSection = document.getElementById('statsSection');
+        const resultsBody = document.getElementById('resultsBody');
+
+        scanForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            // Clear previous errors
+            errorAlert.style.display = 'none';
+            errorAlert.textContent = '';
+
+            const payload = {
+                target: document.getElementById('target').value.trim(),
+                start_port: document.getElementById('start_port').value,
+                end_port: document.getElementById('end_port').value,
+                threads: document.getElementById('threads').value
+            };
+
+            // Toggle loading state
+            submitBtn.disabled = true;
+            btnSpinner.style.display = 'inline-block';
+            btnText.textContent = 'Scanning Target Network...';
+
+            try {
+                const response = await fetch('/scan', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                const data = await response.json();
+
+                if (!response.ok || !data.success) {
+                    throw new Error(data.error || 'Scan request failed.');
+                }
+
+                // Render metrics
+                document.getElementById('statIp').textContent = data.target_ip;
+                document.getElementById('statTotal').textContent = data.total_ports;
+                document.getElementById('statOpen').textContent = data.open_count;
+                document.getElementById('statDuration').textContent = `${data.duration_seconds}s`;
+
+                // Render table rows
+                resultsBody.innerHTML = '';
+                if (data.open_ports.length === 0) {
+                    resultsBody.innerHTML = `
+                        <tr>
+                            <td colspan="4" class="empty-state">
+                                No open ports discovered in the range ${data.start_port} - ${data.end_port}.
+                            </td>
+                        </tr>
+                    `;
+                } else {
+                    data.open_ports.forEach(item => {
+                        const tr = document.createElement('tr');
+                        tr.innerHTML = `
+                            <td style="color: var(--accent-cyan); font-weight: 700;">${item.port}</td>
+                            <td>TCP</td>
+                            <td>${item.service}</td>
+                            <td><span class="status-badge"><span class="pulse-dot"></span> OPEN</span></td>
+                        `;
+                        resultsBody.appendChild(tr);
+                    });
+                }
+
+                statsSection.style.display = 'block';
+                statsSection.scrollIntoView({ behavior: 'smooth' });
+
+            } catch (err) {
+                errorAlert.textContent = err.message || 'An unexpected error occurred while executing the scan.';
+                errorAlert.style.display = 'block';
+            } finally {
+                submitBtn.disabled = false;
+                btnSpinner.style.display = 'none';
+                btnText.textContent = 'Initiate Port Scan';
+            }
+        });
+
+        // Security Headers Logic
+        const headersForm = document.getElementById('headersForm');
+        headersForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const btn = document.getElementById('headersBtn');
+            const spinner = document.getElementById('headersSpinner');
+            const text = document.getElementById('headersBtnText');
+            const alert = document.getElementById('headersAlert');
+            const section = document.getElementById('headersResultSection');
+            
+            alert.style.display = 'none';
+            if (btn) btn.disabled = true;
+            if (spinner) spinner.style.display = 'inline-block';
+            if (text) text.textContent = 'Auditing Security Headers...';
+
+            try {
+                const response = await fetch('/audit-headers', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ target: document.getElementById('headersTarget').value })
+                });
+                const data = await response.json();
+                if (!data.success) throw new Error(data.error);
+
+                document.getElementById('headerGradeBadge').textContent = data.grade;
+                document.getElementById('headerGradeBadge').className = `badge-grade grade-${data.grade}`;
+                document.getElementById('headerScorePct').textContent = `${data.score_pct}%`;
+                document.getElementById('headerPassRatio').textContent = `${data.present_count} / ${data.total_rules}`;
+                document.getElementById('headerServerInfo').textContent = data.server_info;
+
+                const tbody = document.getElementById('headersTableBody');
+                tbody.innerHTML = '';
+                data.headers.forEach(h => {
+                    const tr = document.createElement('tr');
+                    tr.innerHTML = `
+                        <td style="color:var(--accent-cyan)">${h.header}</td>
+                        <td><span class="status-badge" style="background:${h.status==='PRESENT'?'rgba(16, 185, 129, 0.15)':'rgba(244, 63, 94, 0.15)'}; color:${h.status==='PRESENT'?'var(--accent-emerald)':'var(--accent-rose)'}">${h.status}</span></td>
+                        <td style="font-size:0.8rem">${h.value || 'N/A'}</td>
+                    `;
+                    tbody.appendChild(tr);
+                });
+                section.style.display = 'block';
+            } catch (err) {
+                alert.textContent = err.message; alert.style.display = 'block';
+            } finally {
+                if (btn) btn.disabled = false;
+                if (spinner) spinner.style.display = 'none';
+                if (text) text.textContent = 'Audit Security Headers';
+            }
+        });
+
+        // DNS Lookup Logic
+        const dnsForm = document.getElementById('dnsForm');
+        dnsForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const btn = document.getElementById('dnsBtn');
+            const spinner = document.getElementById('dnsSpinner');
+            const text = document.getElementById('dnsBtnText');
+            const alert = document.getElementById('dnsAlert');
+            const grid = document.getElementById('dnsRecordsGrid');
+            alert.style.display = 'none'; grid.innerHTML = '';
+            if (btn) btn.disabled = true;
+            if (spinner) spinner.style.display = 'inline-block';
+            if (text) text.textContent = 'Querying DNS Records...';
+
+            try {
+                const response = await fetch('/dns-lookup', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ domain: document.getElementById('dnsDomain').value })
+                });
+                const data = await response.json();
+                if (!data.success) throw new Error(data.error);
+
+                Object.keys(data.records).forEach(type => {
+                    const card = document.createElement('div');
+                    card.className = 'card';
+                    card.style.margin = '0';
+                    card.style.padding = '1.25rem';
+                    card.innerHTML = `
+                        <label style="color:var(--accent-cyan); margin-bottom:0.75rem;">${type} Records</label>
+                        <div style="font-family:'JetBrains Mono'; font-size:0.85rem; color:var(--text-primary); word-break:break-all;"></div>
+                    `;
+                    const list = card.querySelector('div');
+                    if (data.records[type].length === 0) {
+                        list.innerHTML = '<span style="color:var(--text-secondary); font-style:italic;">No records found.</span>';
+                    } else {
+                        data.records[type].forEach(r => {
+                            const p = document.createElement('div');
+                            p.style.marginBottom = '0.35rem';
+                            p.textContent = typeof r === 'string' ? r : `${r.preference} ${r.exchange}`;
+                            list.appendChild(p);
+                        });
+                    }
+                    grid.appendChild(card);
+                });
+                document.getElementById('dnsResultSection').style.display = 'block';
+                document.getElementById('dnsResultSection').scrollIntoView({ behavior: 'smooth' });
+            } catch (err) {
+                alert.textContent = err.message; alert.style.display = 'block';
+            } finally {
+                if (btn) btn.disabled = false;
+                if (spinner) spinner.style.display = 'none';
+                if (text) text.textContent = 'Query DNS Records';
+            }
+        });
+
+        // Geo Lookup Logic
+        const geoForm = document.getElementById('geoForm');
+        geoForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const btn = document.getElementById('geoBtn');
+            const spinner = document.getElementById('geoSpinner');
+            const text = document.getElementById('geoBtnText');
+            const alert = document.getElementById('geoAlert');
+            alert.style.display = 'none';
+            if (btn) btn.disabled = true;
+            if (spinner) spinner.style.display = 'inline-block';
+            if (text) text.textContent = 'Locating Target IP...';
+
+            try {
+                const response = await fetch('/ip-info', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ target: document.getElementById('geoTarget').value })
+                });
+                const data = await response.json();
+                if (!data.success) throw new Error(data.error);
+
+                document.getElementById('geoCountry').textContent = `${data.country} (${data.region})`;
+                document.getElementById('geoCity').textContent = `${data.city || 'N/A'}, ${data.zip || ''}`;
+                document.getElementById('geoIsp').textContent = data.isp;
+                document.getElementById('geoAsn').textContent = data.asn;
+                document.getElementById('geoResultSection').style.display = 'block';
+                document.getElementById('geoResultSection').scrollIntoView({ behavior: 'smooth' });
+            } catch (err) {
+                alert.textContent = err.message; alert.style.display = 'block';
+            } finally {
+                if (btn) btn.disabled = false;
+                if (spinner) spinner.style.display = 'none';
+                if (text) text.textContent = 'Locate IP / ASN';
+            }
+        });
+    </script>
+</body>
+</html>
+
+
